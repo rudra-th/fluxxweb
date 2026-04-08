@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FluX | Focus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600&family=JetBrains+Mono:wght@100&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #000000;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #ffffff;
+            --text-dim: #a0a0a0; 
+            --radius: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* --- Header --- */
+        header {
+            position: fixed; top: 30px; width: 92%; max-width: 1400px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100;
+        }
+
+        .fs-btn {
+            background: var(--glass); border: 1px solid var(--glass-border); color: #fff;
+            width: 45px; height: 45px; border-radius: 14px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+        }
+        .fs-btn:hover { background: #fff; color: #000; }
+
+        .hours-pill { 
+            background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            padding: 12px 24px; border-radius: var(--radius); font-size: 0.7rem; 
+            letter-spacing: 0.2rem; font-weight: 600; text-transform: uppercase;
+        }
+        .hours-pill span { font-family: 'JetBrains Mono'; color: var(--accent); margin-left: 10px; }
+
+        /* --- Main Stage --- */
+        .main-stage { 
+            position: relative; 
+            width: 80vmin; height: 80vmin;
+            max-width: 400px; max-height: 400px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        svg.progress-ring { position: absolute; transform: rotate(-90deg); width: 100%; height: 100%; }
+        #ring-circle {
+            fill: none; stroke: var(--accent); stroke-width: 2;
+            stroke-dasharray: 1131; 
+            stroke-dashoffset: 1131;
+            transition: stroke-dashoffset 0.3s linear;
+            stroke-linecap: round;
+        }
+
+        .timer-ui { position: relative; z-index: 10; text-align: center; }
+        #time-display {
+            font-family: 'JetBrains Mono'; font-size: 18vmin; 
+            font-weight: 100; letter-spacing: -4px; line-height: 1;
+        }
+        @media (min-width: 500px) { #time-display { font-size: 7rem; } }
+
+        .status-badge { font-size: 0.65rem; letter-spacing: 0.5rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 5px; }
+
+        /* --- UI Panels --- */
+        #history-panel {
+            position: fixed; left: -300px; top: 100px; width: 250px; height: 60vh;
+            background: var(--glass); backdrop-filter: blur(30px); border: 1px solid var(--glass-border);
+            border-radius: 0 20px 20px 0; transition: 0.5s; z-index: 1000; padding: 20px;
+            overflow-y: auto; font-size: 0.7rem;
+        }
+        #history-panel.open { left: 0; }
+        .history-item { margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+
+        .control-dock {
+            position: fixed; bottom: 30px; display: flex; flex-direction: column; gap: 12px;
+            align-items: center; width: 100%; z-index: 100;
+        }
+        .dock-container { 
+            background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); display: flex; gap: 8px; padding: 8px; align-items: center;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.03); border: 1px solid transparent;
+            color: #ccc; padding: 10px 18px; border-radius: 12px; font-size: 0.65rem;
+            cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 0.1rem;
+        }
+        .btn:hover, .btn.active { background: #fff; color: #000; }
+
+        /* Custom Box styling */
+        .custom-box { display: flex; align-items: center; gap: 8px; border-left: 1px solid var(--glass-border); padding-left: 10px; margin-left: 2px; }
+        .custom-input-group { display: flex; flex-direction: column; align-items: center; }
+        .custom-input-group label { font-size: 0.5rem; color: var(--text-dim); margin-bottom: 2px; }
+        .custom-box input { 
+            background: rgba(255,255,255,0.05); border: none; color: #fff; 
+            width: 35px; text-align: center; border-radius: 6px; padding: 4px 0;
+            font-family: 'JetBrains Mono'; font-size: 0.7rem;
+        }
+        .custom-box input:focus { outline: 1px solid #fff; }
+
+        .btn-stopwatch { border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; font-weight: 600; }
+        .start-btn { min-width: 160px; background: #fff; color: #000; font-weight: 600; }
+
+        /* --- Transitions --- */
+        body.is-focusing header { opacity: 0; pointer-events: none; }
+        body.is-focusing .settings-row { transform: translateY(20px); opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body id="main-body">
+
+    <header>
+        <button class="btn" onclick="document.getElementById('history-panel').classList.toggle('open')">Log</button>
+        <div class="hours-pill">Flow Log <span>0.00 HRS</span></div>
+        <button class="fs-btn" onclick="toggleFullscreen()" aria-label="Toggle Fullscreen">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        </button>
+    </header>
+
+    <div id="history-panel">
+        <h3 style="letter-spacing: 0.2rem; margin-bottom: 20px;">HISTORY</h3>
+        <div id="history-list"></div>
+    </div>
+
+    <div class="main-stage">
+        <svg class="progress-ring">
+            <circle id="ring-circle" cx="50%" cy="50%" r="45%"></circle>
+        </svg>
+        <div class="timer-ui">
+            <div class="status-badge" id="status-text">Ready</div>
+            <div id="time-display">25:00</div>
+        </div>
+    </div>
+
+    <div class="control-dock">
+        <div class="dock-container settings-row">
+            <button class="btn" onclick="setMode('timer', 25, 5, 'Pomodoro')">Pomo</button>
+            <button class="btn" onclick="setMode('timer', 90, 15, 'Deep Work')">Deep</button>
+            <button class="btn" onclick="setMode('timer', 180, 30, 'Monk')">Monk</button>
+            <button class="btn btn-stopwatch" onclick="setMode('stopwatch', 0, 0, 'Stopwatch')">Stopwatch</button>
+            
+            <div class="custom-box">
+                <div class="custom-input-group">
+                    <label>FOCUS</label>
+                    <input type="number" id="custom-f" placeholder="25">
+                </div>
+                <div class="custom-input-group">
+                    <label>BREAK</label>
+                    <input type="number" id="custom-b" placeholder="5">
+                </div>
+                <button class="btn" style="padding: 10px; font-size: 0.5rem;" onclick="applyCustom()">Set</button>
+            </div>
+        </div>
+
+        <div class="dock-container">
+            <button class="btn start-btn" id="play-btn" onclick="togglePlay()">Start Flow</button>
+        </div>
+    </div>
+
+    <audio id="bell-audio" src="https://cdn.freesound.org/previews/339/339810_5121236-lq.mp3"></audio>
+    <audio id="start-audio" src="https://cdn.freesound.org/previews/242/242501_4414120-lq.mp3"></audio>
+    <audio id="stop-audio" src="https://cdn.freesound.org/previews/256/256113_3263906-lq.mp3"></audio>
+
+    <script>
+        let state = {
+            mode: 'timer',
+            timeLeft: 1500,
+            initialTime: 1500,
+            breakTime: 300,
+            totalSeconds: parseFloat(localStorage.getItem('flux_total_sec')) || 0,
+            isActive: false,
+            isBreak: false,
+            label: 'Ready'
+        };
+
+        let timerRef = null;
+
+        window.onload = () => {
+            const saved = localStorage.getItem('flux_active_state');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state = { ...state, ...parsed, isActive: false };
+                updateUI();
+            }
+            renderHistory();
+            if ("Notification" in window) Notification.requestPermission();
+        };
+
+        function playSfx(id) {
+            const sound = document.getElementById(id);
+            sound.currentTime = 0;
+            sound.play().catch(() => {});
+        }
+
+        function setMode(type, f, b, label) {
+            state.mode = type;
+            state.timeLeft = f * 60;
+            state.initialTime = f * 60;
+            state.breakTime = b * 60;
+            state.isBreak = false;
+            state.label = label;
+            updateUI();
+            playSfx('stop-audio');
+        }
+
+        function applyCustom() {
+            const f = parseInt(document.getElementById('custom-f').value) || 25;
+            const b = parseInt(document.getElementById('custom-b').value) || 5;
+            setMode('timer', f, b, 'Custom');
+        }
+
+        function togglePlay() {
+            const btn = document.getElementById('play-btn');
+            if (state.isActive) {
+                clearInterval(timerRef);
+                btn.textContent = "Start Flow";
+                btn.classList.add('start-btn');
+                document.getElementById('main-body').classList.remove('is-focusing');
+                playSfx('stop-audio');
+            } else {
+                timerRef = setInterval(tick, 1000);
+                btn.textContent = "Pause Flow";
+                btn.classList.remove('start-btn');
+                document.getElementById('main-body').classList.add('is-focusing');
+                playSfx('start-audio');
+            }
+            state.isActive = !state.isActive;
+            saveState();
+        }
+
+        function tick() {
+            if (state.mode === 'timer') {
+                state.timeLeft--;
+                if (!state.isBreak) state.totalSeconds++;
+                if (state.timeLeft <= 0) handleTransition();
+            } else {
+                state.timeLeft++;
+                state.totalSeconds++;
+            }
+            updateUI();
+            if (state.timeLeft % 5 === 0) saveState();
+        }
+
+        function handleTransition() {
+            playSfx('bell-audio');
+            if (Notification.permission === "granted") {
+                new Notification(state.isBreak ? "Break Over!" : "Session Complete");
+            }
+
+            if (!state.isBreak) {
+                logSession(state.label, state.initialTime);
+                state.isBreak = true;
+                state.timeLeft = state.breakTime;
+                state.initialTime = state.breakTime;
+                state.label = "Rest";
+            } else {
+                state.isBreak = false;
+                // Default back to 25 if it was a one-off custom, or stay on custom.
+                // For logic simplicity, we reset to 25m focus.
+                state.timeLeft = 1500;
+                state.label = "Ready";
+                togglePlay();
+            }
+        }
+
+        function updateUI() {
+            const m = Math.floor(Math.abs(state.timeLeft) / 60);
+            const s = Math.abs(state.timeLeft) % 60;
+            document.getElementById('time-display').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            
+            const ring = document.getElementById('ring-circle');
+            
+            if (state.mode === 'timer') {
+                const percent = state.timeLeft / state.initialTime;
+                ring.style.strokeDashoffset = 1131 * (1 - percent);
+            } else {
+                const secondPercent = (state.timeLeft % 60) / 60;
+                ring.style.strokeDashoffset = 1131 * (1 - secondPercent);
+            }
+
+            document.querySelector('.hours-pill span').textContent = (state.totalSeconds / 3600).toFixed(2);
+            document.getElementById('status-text').textContent = state.label;
+        }
+
+        function saveState() {
+            localStorage.setItem('flux_active_state', JSON.stringify(state));
+            localStorage.setItem('flux_total_sec', state.totalSeconds);
+        }
+
+        function logSession(type, duration) {
+            const history = JSON.parse(localStorage.getItem('flux_history') || '[]');
+            history.unshift({
+                date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                type: type,
+                mins: Math.floor(duration / 60)
+            });
+            localStorage.setItem('flux_history', JSON.stringify(history.slice(0, 20)));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('flux_history') || '[]');
+            document.getElementById('history-list').innerHTML = history.map(item => `
+                <div class="history-item">
+                    <strong>${item.type}</strong> — ${item.mins}m<br>
+                    <span style="color:#666">${item.date}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+    </script>
+</body>
+</html>             
