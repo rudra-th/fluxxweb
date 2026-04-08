@@ -42,7 +42,7 @@ Storage: Browser LocalStorage API
 Clone the repository:
 
 Bash
-git clone https://github.com/rudra-th/flux-focus.git
+git clone https://github.com/rudra-th/fluxxweb.git
 Open the app: Simply open index.html in any modern web browser.
 
 Start Flowing: Select a protocol (Pomo, Deep, or Monk) and hit Start Flow.
