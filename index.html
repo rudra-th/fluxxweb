@@ -50,10 +50,8 @@
         svg.progress-ring { position: absolute; transform: rotate(-90deg); width: 100%; height: 100%; }
         #ring-circle {
             fill: none; stroke: var(--accent); stroke-width: 2;
-            stroke-dasharray: 1131; 
-            stroke-dashoffset: 1131;
-            transition: stroke-dashoffset 0.3s linear;
             stroke-linecap: round;
+            transition: stroke-dashoffset 0.3s linear;
         }
 
         .timer-ui { position: relative; z-index: 10; text-align: center; }
@@ -67,13 +65,13 @@
 
         /* --- UI Panels --- */
         #history-panel {
-            position: fixed; left: -300px; top: 100px; width: 250px; height: 60vh;
-            background: var(--glass); backdrop-filter: blur(30px); border: 1px solid var(--glass-border);
-            border-radius: 0 20px 20px 0; transition: 0.5s; z-index: 1000; padding: 20px;
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100vh;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(30px); border-right: 1px solid var(--glass-border);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; padding: 100px 30px 40px;
             overflow-y: auto; font-size: 0.7rem;
         }
         #history-panel.open { left: 0; }
-        .history-item { margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        .history-item { margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 8px; }
 
         .control-dock {
             position: fixed; bottom: 30px; display: flex; flex-direction: column; gap: 12px;
@@ -91,7 +89,6 @@
         }
         .btn:hover, .btn.active { background: #fff; color: #000; }
 
-        /* Custom Box styling */
         .custom-box { display: flex; align-items: center; gap: 8px; border-left: 1px solid var(--glass-border); padding-left: 10px; margin-left: 2px; }
         .custom-input-group { display: flex; flex-direction: column; align-items: center; }
         .custom-input-group label { font-size: 0.5rem; color: var(--text-dim); margin-bottom: 2px; }
@@ -106,22 +103,22 @@
         .start-btn { min-width: 160px; background: #fff; color: #000; font-weight: 600; }
 
         /* --- Transitions --- */
-        body.is-focusing header { opacity: 0; pointer-events: none; }
-        body.is-focusing .settings-row { transform: translateY(20px); opacity: 0; pointer-events: none; }
+        body.is-focusing header { opacity: 0; pointer-events: none; transition: 0.5s; }
+        body.is-focusing .settings-row { transform: translateY(20px); opacity: 0; pointer-events: none; transition: 0.5s; }
     </style>
 </head>
 <body id="main-body">
 
     <header>
-        <button class="btn" onclick="document.getElementById('history-panel').classList.toggle('open')">Log</button>
+        <button class="btn" style="z-index: 1100;" onclick="document.getElementById('history-panel').classList.toggle('open')">Log</button>
         <div class="hours-pill">Flow Log <span>0.00 HRS</span></div>
-        <button class="fs-btn" onclick="toggleFullscreen()" aria-label="Toggle Fullscreen">
+        <button class="fs-btn" onclick="toggleFullscreen()">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
         </button>
     </header>
 
     <div id="history-panel">
-        <h3 style="letter-spacing: 0.2rem; margin-bottom: 20px;">HISTORY</h3>
+        <h3 style="letter-spacing: 0.2rem; margin-bottom: 20px; font-weight: 400; color: var(--text-dim);">HISTORY</h3>
         <div id="history-list"></div>
     </div>
 
@@ -165,6 +162,13 @@
     <audio id="stop-audio" src="https://cdn.freesound.org/previews/256/256113_3263906-lq.mp3"></audio>
 
     <script>
+        const ring = document.getElementById('ring-circle');
+        const radius = ring.r.baseVal.valueInSpecifiedUnits; 
+        const circumference = 2 * Math.PI * (400 * 0.45); // Accurate based on 400px max-width 45% r
+
+        ring.style.strokeDasharray = circumference;
+        ring.style.strokeDashoffset = circumference;
+
         let state = {
             mode: 'timer',
             timeLeft: 1500,
@@ -173,7 +177,8 @@
             totalSeconds: parseFloat(localStorage.getItem('flux_total_sec')) || 0,
             isActive: false,
             isBreak: false,
-            label: 'Ready'
+            label: 'Ready',
+            endTime: null 
         };
 
         let timerRef = null;
@@ -183,8 +188,8 @@
             if (saved) {
                 const parsed = JSON.parse(saved);
                 state = { ...state, ...parsed, isActive: false };
-                updateUI();
             }
+            updateUI();
             renderHistory();
             if ("Notification" in window) Notification.requestPermission();
         };
@@ -196,6 +201,7 @@
         }
 
         function setMode(type, f, b, label) {
+            if (state.isActive) togglePlay();
             state.mode = type;
             state.timeLeft = f * 60;
             state.initialTime = f * 60;
@@ -204,6 +210,7 @@
             state.label = label;
             updateUI();
             playSfx('stop-audio');
+            saveState();
         }
 
         function applyCustom() {
@@ -221,7 +228,8 @@
                 document.getElementById('main-body').classList.remove('is-focusing');
                 playSfx('stop-audio');
             } else {
-                timerRef = setInterval(tick, 1000);
+                state.endTime = Date.now() + (state.timeLeft * 1000);
+                timerRef = setInterval(tick, 200); 
                 btn.textContent = "Pause Flow";
                 btn.classList.remove('start-btn');
                 document.getElementById('main-body').classList.add('is-focusing');
@@ -232,20 +240,32 @@
         }
 
         function tick() {
+            const now = Date.now();
+            
             if (state.mode === 'timer') {
-                state.timeLeft--;
-                if (!state.isBreak) state.totalSeconds++;
+                const diff = Math.max(0, Math.ceil((state.endTime - now) / 1000));
+                
+                if (!state.isBreak && diff < state.timeLeft) {
+                    state.totalSeconds += (state.timeLeft - diff);
+                }
+                
+                state.timeLeft = diff;
                 if (state.timeLeft <= 0) handleTransition();
             } else {
+                // Stopwatch uses actual time delta to prevent drift
                 state.timeLeft++;
                 state.totalSeconds++;
             }
+            
             updateUI();
-            if (state.timeLeft % 5 === 0) saveState();
+            if (state.timeLeft % 10 === 0) saveState();
         }
 
         function handleTransition() {
             playSfx('bell-audio');
+            clearInterval(timerRef);
+            state.isActive = false;
+
             if (Notification.permission === "granted") {
                 new Notification(state.isBreak ? "Break Over!" : "Session Complete");
             }
@@ -256,14 +276,19 @@
                 state.timeLeft = state.breakTime;
                 state.initialTime = state.breakTime;
                 state.label = "Rest";
+                togglePlay(); // Auto-start break
             } else {
                 state.isBreak = false;
-                // Default back to 25 if it was a one-off custom, or stay on custom.
-                // For logic simplicity, we reset to 25m focus.
                 state.timeLeft = 1500;
+                state.initialTime = 1500;
                 state.label = "Ready";
-                togglePlay();
+                const btn = document.getElementById('play-btn');
+                btn.textContent = "Start Flow";
+                btn.classList.add('start-btn');
+                document.getElementById('main-body').classList.remove('is-focusing');
             }
+            updateUI();
+            saveState();
         }
 
         function updateUI() {
@@ -271,16 +296,14 @@
             const s = Math.abs(state.timeLeft) % 60;
             document.getElementById('time-display').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
             
-            const ring = document.getElementById('ring-circle');
-            
+            let progress;
             if (state.mode === 'timer') {
-                const percent = state.timeLeft / state.initialTime;
-                ring.style.strokeDashoffset = 1131 * (1 - percent);
+                progress = state.timeLeft / state.initialTime;
             } else {
-                const secondPercent = (state.timeLeft % 60) / 60;
-                ring.style.strokeDashoffset = 1131 * (1 - secondPercent);
+                progress = 1 - ((state.timeLeft % 60) / 60);
             }
-
+            
+            ring.style.strokeDashoffset = circumference * (1 - progress);
             document.querySelector('.hours-pill span').textContent = (state.totalSeconds / 3600).toFixed(2);
             document.getElementById('status-text').textContent = state.label;
         }
@@ -305,8 +328,8 @@
             const history = JSON.parse(localStorage.getItem('flux_history') || '[]');
             document.getElementById('history-list').innerHTML = history.map(item => `
                 <div class="history-item">
-                    <strong>${item.type}</strong> — ${item.mins}m<br>
-                    <span style="color:#666">${item.date}</span>
+                    <strong style="color:#fff">${item.type}</strong> — ${item.mins}m<br>
+                    <span style="color:#555">${item.date}</span>
                 </div>
             `).join('');
         }
@@ -317,4 +340,4 @@
         }
     </script>
 </body>
-</html>             
+</html>
