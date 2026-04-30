@@ -1,53 +1,32 @@
-🌌 FluX | Focus & Deep Work Timer
-FluX is a sophisticated, distraction-free timer designed to help users enter and maintain a flow state. It moves beyond the traditional Pomodoro technique by offering specialized "Deep Work" and "Monk Mode" protocols, backed by a persistent logging system that tracks your total focus hours.
+# ⚡ FluX | Minimalist Focus Engine
 
-🚀 Experience Zen
-Minimalist Interface: A sleek, dark-mode UI that utilizes glassmorphism and smooth transitions.
+[**Live Demo »**](https://fluxxweb.netlify.app)
 
-Focus Protocols:
+FluX is a high-precision, aesthetic productivity timer built for deep work. Unlike standard browser timers that drift when tabs are backgrounded, FluX utilizes timestamp-based logic to ensure millisecond accuracy during intense focus sessions.
 
-Pomo: 25m focus / 5m break (Classic)
+![FluX Preview](preview.png)
 
-Deep: 90m focus / 15m break (Optimized for cognitive load)
+---
 
-Monk: 180m focus / 30m break (Extreme focus)
+## 🚀 Key Features
 
-Stopwatch: For open-ended flow sessions.
+*   **Drift-Free Precision:** Uses `Date.now()` delta calculations to bypass browser background throttling.
+*   **Three Deep Work Tiers:** 
+    *   **Pomodoro:** 25m Focus / 5m Break.
+    *   **Deep Work:** 90m Focus / 15m Break.
+    *   **Monk Mode:** 180m Focus / 30m Break.
+*   **Persistent Sessions:** Flow logs and timer states are saved to `localStorage`, so a page refresh never kills your progress.
+*   **Glassmorphism UI:** A sleek, distraction-free interface designed for zero-clutter environments.
+*   **Dynamic Progress Ring:** Real-time SVG visualization of your focus session.
 
-Zen Mode: The interface automatically hides headers and settings during active sessions to remove all visual clutter.
+## 🛠️ Tech Stack
 
-Flow Tracking: A persistent "Flow Log" tracks total hours focused, stored locally so your progress is never lost.
+*   **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3.
+*   **Storage:** Browser LocalStorage API.
+*   **Audio:** High-fidelity notification pings for session transitions.
 
-✨ Technical Highlights
-Zero Dependencies: Built entirely with Vanilla JavaScript, HTML5, and CSS3.
+## 📦 Local Setup
 
-SVG Progress Visualization: A dynamic, circular progress ring calculated in real-time using stroke-dashoffset logic.
-
-State Persistence: Utilizes localStorage to save your active timer state and total hours, ensuring your session survives a page refresh.
-
-System Integration: Features native browser notifications and audio cues for session transitions.
-
-Responsive Engine: Uses vmin units and CSS variables to ensure the "Main Stage" looks perfect on any screen size.
-
-🛠️ Tech Stack
-Frontend: HTML5, CSS3 (Custom Properties, Flexbox)
-
-Logic: JavaScript (ES6+)
-
-Typography: Inter & JetBrains Mono
-
-Storage: Browser LocalStorage API
-
-📂 Installation & Usage
-Clone the repository:
-
-Bash
-git clone https://github.com/rudra-th/fluxxweb.git
-Open the app: Simply open index.html in any modern web browser.
-
-Start Flowing: Select a protocol (Pomo, Deep, or Monk) and hit Start Flow.
-
-⚙️ Customization
-FluX allows for on-the-fly custom duration settings. Input your desired focus and break minutes in the "Custom" panel to create a personalized protocol.
-
-Designed for those who value deep work. Developed by rudra-th.
+1. Clone the repository:
+   ```bash
+   git clone [https://github.com/rudra-th/fluxxweb.git](https://github.com/rudra-th/fluxxweb.git)
