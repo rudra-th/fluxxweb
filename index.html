@@ -3,342 +3,1377 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FluX | Focus</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600&family=JetBrains+Mono:wght@100&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#050505">
+    <meta name="description" content="FluX is a precise static focus timer for deep work, sessions, breaks, logs, and flow tracking.">
+    <title>FluX | Focus Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #000000;
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --accent: #ffffff;
-            --text-dim: #a0a0a0; 
-            --radius: 20px;
+            --bg: #050505;
+            --panel: #101010;
+            --panel-2: #171717;
+            --line: rgba(255, 255, 255, 0.11);
+            --line-strong: rgba(255, 255, 255, 0.2);
+            --text: #f8f6ef;
+            --muted: #9c9c93;
+            --faint: #62625b;
+            --accent: #e7ff5f;
+            --accent-2: #68e1fd;
+            --danger: #ff776f;
+            --shadow: 0 26px 80px rgba(0, 0, 0, 0.45);
+            --radius: 8px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-        body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
-        /* --- Header --- */
-        header {
-            position: fixed; top: 30px; width: 92%; max-width: 1400px;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100;
+        [data-theme="dawn"] {
+            --bg: #f3efe5;
+            --panel: #fffaf0;
+            --panel-2: #ebe4d5;
+            --line: rgba(32, 28, 22, 0.14);
+            --line-strong: rgba(32, 28, 22, 0.26);
+            --text: #1b1915;
+            --muted: #6d675c;
+            --faint: #9a9282;
+            --accent: #0f8f72;
+            --accent-2: #b2472e;
+            --shadow: 0 22px 70px rgba(58, 46, 24, 0.18);
         }
 
-        .fs-btn {
-            background: var(--glass); border: 1px solid var(--glass-border); color: #fff;
-            width: 45px; height: 45px; border-radius: 14px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; transition: 0.3s;
-        }
-        .fs-btn:hover { background: #fff; color: #000; }
-
-        .hours-pill { 
-            background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
-            padding: 12px 24px; border-radius: var(--radius); font-size: 0.7rem; 
-            letter-spacing: 0.2rem; font-weight: 600; text-transform: uppercase;
-        }
-        .hours-pill span { font-family: 'JetBrains Mono'; color: var(--accent); margin-left: 10px; }
-
-        /* --- Main Stage --- */
-        .main-stage { 
-            position: relative; 
-            width: 80vmin; height: 80vmin;
-            max-width: 400px; max-height: 400px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        
-        svg.progress-ring { position: absolute; transform: rotate(-90deg); width: 100%; height: 100%; }
-        #ring-circle {
-            fill: none; stroke: var(--accent); stroke-width: 2;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.3s linear;
+        [data-theme="field"] {
+            --bg: #07100c;
+            --panel: #0e1c16;
+            --panel-2: #152820;
+            --line: rgba(195, 229, 204, 0.13);
+            --line-strong: rgba(195, 229, 204, 0.25);
+            --text: #f3fff4;
+            --muted: #a1b7a7;
+            --faint: #65766b;
+            --accent: #9ef27f;
+            --accent-2: #f7c873;
         }
 
-        .timer-ui { position: relative; z-index: 10; text-align: center; }
-        #time-display {
-            font-family: 'JetBrains Mono'; font-size: 18vmin; 
-            font-weight: 100; letter-spacing: -4px; line-height: 1;
-        }
-        @media (min-width: 500px) { #time-display { font-size: 7rem; } }
-
-        .status-badge { font-size: 0.65rem; letter-spacing: 0.5rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 5px; }
-
-        /* --- UI Panels --- */
-        #history-panel {
-            position: fixed; left: -300px; top: 0; width: 280px; height: 100vh;
-            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(30px); border-right: 1px solid var(--glass-border);
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; padding: 100px 30px 40px;
-            overflow-y: auto; font-size: 0.7rem;
-        }
-        #history-panel.open { left: 0; }
-        .history-item { margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 8px; }
-
-        .control-dock {
-            position: fixed; bottom: 30px; display: flex; flex-direction: column; gap: 12px;
-            align-items: center; width: 100%; z-index: 100;
-        }
-        .dock-container { 
-            background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
-            border-radius: var(--radius); display: flex; gap: 8px; padding: 8px; align-items: center;
+        * {
+            box-sizing: border-box;
         }
 
-        .btn {
-            background: rgba(255,255,255,0.03); border: 1px solid transparent;
-            color: #ccc; padding: 10px 18px; border-radius: 12px; font-size: 0.65rem;
-            cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 0.1rem;
+        html {
+            min-height: 100%;
+            background: var(--bg);
         }
-        .btn:hover, .btn.active { background: #fff; color: #000; }
 
-        .custom-box { display: flex; align-items: center; gap: 8px; border-left: 1px solid var(--glass-border); padding-left: 10px; margin-left: 2px; }
-        .custom-input-group { display: flex; flex-direction: column; align-items: center; }
-        .custom-input-group label { font-size: 0.5rem; color: var(--text-dim); margin-bottom: 2px; }
-        .custom-box input { 
-            background: rgba(255,255,255,0.05); border: none; color: #fff; 
-            width: 35px; text-align: center; border-radius: 6px; padding: 4px 0;
-            font-family: 'JetBrains Mono'; font-size: 0.7rem;
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background:
+                radial-gradient(circle at 18% 8%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 22rem),
+                linear-gradient(135deg, rgba(255,255,255,0.045), transparent 38%),
+                var(--bg);
+            color: var(--text);
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: 0;
+            overflow-x: hidden;
         }
-        .custom-box input:focus { outline: 1px solid #fff; }
 
-        .btn-stopwatch { border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; font-weight: 600; }
-        .start-btn { min-width: 160px; background: #fff; color: #000; font-weight: 600; }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+            background-size: 54px 54px;
+            mask-image: linear-gradient(to bottom, black, transparent 76%);
+            opacity: 0.45;
+        }
 
-        /* --- Transitions --- */
-        body.is-focusing header { opacity: 0; pointer-events: none; transition: 0.5s; }
-        body.is-focusing .settings-row { transform: translateY(20px); opacity: 0; pointer-events: none; transition: 0.5s; }
+        button, input {
+            font: inherit;
+        }
+
+        button {
+            border: 0;
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            width: min(1480px, calc(100% - 32px));
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 22px 0;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 18px;
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .mark {
+            width: 42px;
+            height: 42px;
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            display: grid;
+            place-items: center;
+            background:
+                linear-gradient(145deg, color-mix(in srgb, var(--accent) 32%, transparent), transparent),
+                var(--panel);
+            box-shadow: var(--shadow);
+            font-family: "JetBrains Mono", monospace;
+            font-weight: 700;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: clamp(1.05rem, 2vw, 1.55rem);
+            line-height: 1;
+            letter-spacing: 0.02em;
+        }
+
+        .brand p, .micro {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .status-strip {
+            justify-self: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--panel) 84%, transparent);
+            backdrop-filter: blur(18px);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 22px var(--accent);
+        }
+
+        .status-strip span {
+            font-family: "JetBrains Mono", monospace;
+            color: var(--muted);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            white-space: nowrap;
+        }
+
+        .actions {
+            justify-self: end;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-btn, .pill-btn, .primary-btn, .mode-btn {
+            min-height: 42px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: color-mix(in srgb, var(--panel) 86%, transparent);
+            color: var(--text);
+            cursor: pointer;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+        }
+
+        .icon-btn {
+            width: 42px;
+            display: grid;
+            place-items: center;
+        }
+
+        .icon-btn svg {
+            width: 19px;
+            height: 19px;
+        }
+
+        .icon-btn:hover, .pill-btn:hover, .primary-btn:hover, .mode-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--line-strong);
+        }
+
+        .icon-btn[aria-pressed="true"], .theme-btn.active, .mode-btn.active {
+            background: var(--accent);
+            color: #050505;
+            border-color: transparent;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(270px, 360px) minmax(420px, 1fr) minmax(270px, 360px);
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .panel, .focus-stage {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: color-mix(in srgb, var(--panel) 88%, transparent);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(22px);
+        }
+
+        .panel {
+            padding: 18px;
+            min-width: 0;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .panel-title h2 {
+            margin: 0;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--muted);
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .score {
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: color-mix(in srgb, var(--panel-2) 74%, transparent);
+            min-height: 82px;
+        }
+
+        .score strong {
+            display: block;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+        }
+
+        .score span {
+            color: var(--muted);
+            font-size: 0.76rem;
+        }
+
+        .goal-box {
+            margin-top: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .field {
+            display: grid;
+            gap: 7px;
+        }
+
+        label {
+            color: var(--muted);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        input {
+            width: 100%;
+            min-height: 44px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: color-mix(in srgb, var(--panel-2) 80%, transparent);
+            color: var(--text);
+            padding: 0 12px;
+            outline: 0;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+        }
+
+        .focus-stage {
+            min-height: clamp(590px, calc(100vh - 104px), 820px);
+            padding: clamp(18px, 3vw, 34px);
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            overflow: hidden;
+        }
+
+        .mode-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .mode-btn {
+            padding: 10px 8px;
+            text-align: left;
+        }
+
+        .mode-btn strong {
+            display: block;
+            font-size: 0.88rem;
+            margin-bottom: 5px;
+        }
+
+        .mode-btn span {
+            display: block;
+            color: var(--muted);
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.68rem;
+        }
+
+        .mode-btn.active span {
+            color: rgba(0,0,0,0.65);
+        }
+
+        .timer-wrap {
+            display: grid;
+            place-items: center;
+            padding: 22px 0;
+        }
+
+        .timer-orbit {
+            position: relative;
+            width: min(76vmin, 560px);
+            min-width: 300px;
+            aspect-ratio: 1;
+            display: grid;
+            place-items: center;
+        }
+
+        .timer-orbit::before {
+            content: "";
+            position: absolute;
+            inset: 7.5%;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.055), transparent 54%),
+                color-mix(in srgb, var(--panel-2) 28%, transparent);
+        }
+
+        .progress {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background:
+                conic-gradient(var(--accent) calc(var(--progress) * 1turn), rgba(255,255,255,0.08) 0);
+            mask: radial-gradient(circle, transparent 62%, black 63%, black 66%, transparent 67%);
+            filter: drop-shadow(0 0 28px color-mix(in srgb, var(--accent) 28%, transparent));
+        }
+
+        .timer-core {
+            position: relative;
+            z-index: 1;
+            width: 69%;
+            aspect-ratio: 1;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            padding: 18px;
+        }
+
+        .phase {
+            margin: 0 0 10px;
+            color: var(--muted);
+            font-size: clamp(0.72rem, 1.7vw, 0.84rem);
+            text-transform: uppercase;
+            letter-spacing: 0.24em;
+        }
+
+        .time {
+            font-family: "JetBrains Mono", monospace;
+            font-size: clamp(3.7rem, 11vw, 8.4rem);
+            line-height: 0.9;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .goal {
+            min-height: 1.4em;
+            margin-top: 14px;
+            color: var(--muted);
+            font-size: clamp(0.82rem, 2vw, 0.98rem);
+            max-width: 30ch;
+            overflow-wrap: anywhere;
+        }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .secondary-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-start;
+        }
+
+        .right-actions {
+            justify-content: flex-end;
+        }
+
+        .primary-btn {
+            min-width: 190px;
+            padding: 0 22px;
+            background: var(--text);
+            color: var(--bg);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .pill-btn {
+            padding: 0 13px;
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .custom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .theme-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .theme-btn {
+            padding: 9px;
+            min-height: 40px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel-2);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .history {
+            display: grid;
+            gap: 10px;
+            max-height: 390px;
+            overflow: auto;
+            padding-right: 4px;
+            overscroll-behavior: contain;
+        }
+
+        .history-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: color-mix(in srgb, var(--panel-2) 70%, transparent);
+        }
+
+        .history-item strong {
+            display: block;
+            font-size: 0.86rem;
+            overflow-wrap: anywhere;
+        }
+
+        .history-item span {
+            color: var(--muted);
+            font-size: 0.74rem;
+        }
+
+        .empty {
+            color: var(--muted);
+            border: 1px dashed var(--line-strong);
+            border-radius: var(--radius);
+            padding: 18px;
+            font-size: 0.88rem;
+        }
+
+        .session-card {
+            margin-top: 14px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: color-mix(in srgb, var(--panel-2) 70%, transparent);
+        }
+
+        .session-card h3 {
+            margin: 0 0 8px;
+            font-size: 0.92rem;
+        }
+
+        .session-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.82rem;
+            line-height: 1.45;
+        }
+
+        .mini-meter {
+            height: 8px;
+            border-radius: 99px;
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .mini-meter span {
+            display: block;
+            height: 100%;
+            width: var(--day-progress);
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            border-radius: inherit;
+        }
+
+        .kbd-target {
+            position: fixed;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @media (max-width: 1120px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .side-left {
+                order: 2;
+            }
+
+            .focus-stage {
+                order: 1;
+                min-height: auto;
+            }
+
+            .side-right {
+                order: 3;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .app {
+                width: min(100% - 20px, 1480px);
+                padding: 12px 0 18px;
+            }
+
+            .topbar {
+                grid-template-columns: 1fr auto;
+            }
+
+            .status-strip {
+                grid-column: 1 / -1;
+                justify-self: stretch;
+                justify-content: center;
+                order: 3;
+            }
+
+            .brand p {
+                display: none;
+            }
+
+            .actions {
+                gap: 6px;
+            }
+
+            .mode-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .focus-stage, .panel {
+                padding: 14px;
+            }
+
+            .mode-btn {
+                min-height: 66px;
+            }
+
+            .mode-btn strong {
+                font-size: 0.82rem;
+            }
+
+            .mode-btn span {
+                font-size: 0.64rem;
+            }
+
+            .timer-orbit {
+                width: min(94vw, 480px);
+                min-width: 0;
+            }
+
+            .timer-core {
+                width: 78%;
+            }
+
+            .phase {
+                letter-spacing: 0.16em;
+            }
+
+            .control-row {
+                grid-template-columns: 1fr;
+            }
+
+            .secondary-actions, .right-actions {
+                justify-content: center;
+            }
+
+            .primary-btn {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .custom-grid, .score-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .time {
+                font-size: clamp(3.15rem, 15vw, 4rem);
+            }
+
+            .timer-core {
+                width: 82%;
+            }
+
+            .icon-btn {
+                width: 39px;
+                min-height: 39px;
+            }
+
+            .status-strip span {
+                font-size: 0.66rem;
+            }
+        }
+
+        @media (max-height: 760px) and (min-width: 1121px) {
+            .focus-stage {
+                min-height: auto;
+            }
+
+            .timer-orbit {
+                width: min(62vmin, 470px);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
-<body id="main-body">
-
-    <header>
-        <button class="btn" style="z-index: 1100;" onclick="document.getElementById('history-panel').classList.toggle('open')">Log</button>
-        <div class="hours-pill">Flow Log <span>0.00 HRS</span></div>
-        <button class="fs-btn" onclick="toggleFullscreen()">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-        </button>
-    </header>
-
-    <div id="history-panel">
-        <button class="btn" style="margin-bottom: 20px; width: 100%;" onclick="document.getElementById('history-panel').classList.remove('open')">Close</button>
-        <h3 style="letter-spacing: 0.2rem; margin-bottom: 20px; font-weight: 400; color: var(--text-dim);">HISTORY</h3>
-        <div id="history-list"></div>
-    </div>
-
-    <div class="main-stage">
-        <svg class="progress-ring">
-            <circle id="ring-circle" cx="50%" cy="50%" r="45%"></circle>
-        </svg>
-        <div class="timer-ui">
-            <div class="status-badge" id="status-text">Ready</div>
-            <div id="time-display">25:00</div>
-        </div>
-    </div>
-
-    <div class="control-dock">
-        <div class="dock-container settings-row">
-            <button class="btn" onclick="setMode('timer', 25, 5, 'Pomodoro')">Pomo</button>
-            <button class="btn" onclick="setMode('timer', 90, 15, 'Deep Work')">Deep</button>
-            <button class="btn" onclick="setMode('timer', 180, 30, 'Monk')">Monk</button>
-            <button class="btn btn-stopwatch" onclick="setMode('stopwatch', 0, 0, 'Stopwatch')">Stopwatch</button>
-            
-            <div class="custom-box">
-                <div class="custom-input-group">
-                    <label>FOCUS</label>
-                    <input type="number" id="custom-f" placeholder="25">
+<body>
+    <div class="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="mark" aria-hidden="true">FX</div>
+                <div>
+                    <h1>FluX</h1>
+                    <p>Precision focus engine</p>
                 </div>
-                <div class="custom-input-group">
-                    <label>BREAK</label>
-                    <input type="number" id="custom-b" placeholder="5">
-                </div>
-                <button class="btn" style="padding: 10px; font-size: 0.5rem;" onclick="applyCustom()">Set</button>
             </div>
-        </div>
 
-        <div class="dock-container">
-            <button class="btn start-btn" id="play-btn" onclick="togglePlay()">Start Flow</button>
-        </div>
+            <div class="status-strip" aria-live="polite">
+                <i class="pulse" aria-hidden="true"></i>
+                <span id="top-status">Ready for focus</span>
+            </div>
+
+            <div class="actions">
+                <button class="icon-btn" id="sound-btn" type="button" aria-label="Toggle sound" aria-pressed="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+                </button>
+                <button class="icon-btn" id="notify-btn" type="button" aria-label="Toggle notifications" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 21h4"/><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/></svg>
+                </button>
+                <button class="icon-btn" id="fullscreen-btn" type="button" aria-label="Toggle fullscreen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H3v5"/><path d="M16 3h5v5"/><path d="M21 16v5h-5"/><path d="M3 16v5h5"/><path d="m3 3 6 6"/><path d="m21 3-6 6"/><path d="m21 21-6-6"/><path d="m3 21 6-6"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="layout">
+            <aside class="panel side-left">
+                <div class="panel-title">
+                    <h2>Today</h2>
+                    <button class="pill-btn" id="clear-history" type="button">Clear</button>
+                </div>
+
+                <div class="score-grid">
+                    <div class="score">
+                        <strong id="today-time">0h 00m</strong>
+                        <span>Deep work</span>
+                    </div>
+                    <div class="score">
+                        <strong id="today-count">0</strong>
+                        <span>Sessions</span>
+                    </div>
+                    <div class="score">
+                        <strong id="streak-count">0</strong>
+                        <span>Day streak</span>
+                    </div>
+                    <div class="score">
+                        <strong id="all-time">0h</strong>
+                        <span>All time</span>
+                    </div>
+                </div>
+
+                <div class="session-card">
+                    <h3>Daily target</h3>
+                    <p><span id="target-copy">0 of 4 focus sessions complete.</span></p>
+                    <div class="mini-meter" style="--day-progress: 0%">
+                        <span id="day-meter"></span>
+                    </div>
+                </div>
+
+                <div class="goal-box">
+                    <div class="field">
+                        <label for="goal-input">Session intention</label>
+                        <input id="goal-input" type="text" maxlength="90" placeholder="Ship the hardest useful thing">
+                    </div>
+                    <div class="custom-grid">
+                        <div class="field">
+                            <label for="focus-min">Focus min</label>
+                            <input id="focus-min" type="number" min="1" max="240" value="50">
+                        </div>
+                        <div class="field">
+                            <label for="break-min">Break min</label>
+                            <input id="break-min" type="number" min="1" max="60" value="10">
+                        </div>
+                    </div>
+                    <button class="pill-btn" id="custom-btn" type="button">Use Custom Session</button>
+                </div>
+            </aside>
+
+            <section class="focus-stage" aria-label="Focus timer">
+                <div class="mode-row" role="group" aria-label="Focus modes">
+                    <button class="mode-btn active" type="button" data-mode="sprint">
+                        <strong>Sprint</strong>
+                        <span>25 / 5</span>
+                    </button>
+                    <button class="mode-btn" type="button" data-mode="flow">
+                        <strong>Flow</strong>
+                        <span>50 / 10</span>
+                    </button>
+                    <button class="mode-btn" type="button" data-mode="deep">
+                        <strong>Deep</strong>
+                        <span>90 / 15</span>
+                    </button>
+                    <button class="mode-btn" type="button" data-mode="stopwatch">
+                        <strong>Count Up</strong>
+                        <span>open</span>
+                    </button>
+                </div>
+
+                <div class="timer-wrap">
+                    <div class="timer-orbit">
+                        <div class="progress" id="progress-ring" style="--progress: 0"></div>
+                        <div class="timer-core">
+                            <div>
+                                <p class="phase" id="phase-label">Sprint Focus</p>
+                                <div class="time" id="time-display">25:00</div>
+                                <div class="goal" id="goal-display">Choose one task and start.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-row">
+                    <div class="secondary-actions">
+                        <button class="pill-btn" id="reset-btn" type="button">Reset</button>
+                        <button class="pill-btn" id="skip-btn" type="button">Skip</button>
+                    </div>
+                    <button class="primary-btn" id="start-btn" type="button">Start</button>
+                    <div class="secondary-actions right-actions">
+                        <button class="pill-btn" id="add-session-btn" type="button">Log 25m</button>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="panel side-right">
+                <div class="panel-title">
+                    <h2>Session Log</h2>
+                    <span class="micro" id="history-count">0 saved</span>
+                </div>
+                <div class="history" id="history-list"></div>
+
+                <div class="panel-title" style="margin-top: 20px;">
+                    <h2>Look</h2>
+                </div>
+                <div class="theme-list" role="group" aria-label="Theme">
+                    <button class="theme-btn active" type="button" data-theme="void">Void</button>
+                    <button class="theme-btn" type="button" data-theme="field">Field</button>
+                    <button class="theme-btn" type="button" data-theme="dawn">Dawn</button>
+                </div>
+
+                <div class="session-card">
+                    <h3 id="next-title">Next break</h3>
+                    <p id="next-copy">Breaks auto-start after a completed focus session. Skip or reset at any time.</p>
+                </div>
+            </aside>
+        </main>
     </div>
 
-    <audio id="bell-audio" src="https://cdn.freesound.org/previews/339/339810_5121236-lq.mp3"></audio>
-    <audio id="start-audio" src="https://cdn.freesound.org/previews/242/242501_4414120-lq.mp3"></audio>
-    <audio id="stop-audio" src="https://cdn.freesound.org/previews/256/256113_3263906-lq.mp3"></audio>
+    <span class="kbd-target" tabindex="-1"></span>
 
     <script>
-        const ring = document.getElementById('ring-circle');
-        const radius = ring.r.baseVal.valueInSpecifiedUnits; 
-        const circumference = 2 * Math.PI * (400 * 0.45); // Accurate based on 400px max-width 45% r
+        const modes = {
+            sprint: { label: "Sprint", focus: 25, break: 5 },
+            flow: { label: "Flow", focus: 50, break: 10 },
+            deep: { label: "Deep", focus: 90, break: 15 },
+            stopwatch: { label: "Count Up", focus: 0, break: 0, stopwatch: true }
+        };
 
-        ring.style.strokeDasharray = circumference;
-        ring.style.strokeDashoffset = circumference;
+        const storeKey = "flux_v2_state";
+        const historyKey = "flux_v2_history";
+        const dayTarget = 4;
+
+        const el = {
+            body: document.body,
+            time: document.getElementById("time-display"),
+            phase: document.getElementById("phase-label"),
+            goal: document.getElementById("goal-display"),
+            goalInput: document.getElementById("goal-input"),
+            focusInput: document.getElementById("focus-min"),
+            breakInput: document.getElementById("break-min"),
+            progress: document.getElementById("progress-ring"),
+            start: document.getElementById("start-btn"),
+            reset: document.getElementById("reset-btn"),
+            skip: document.getElementById("skip-btn"),
+            custom: document.getElementById("custom-btn"),
+            addSession: document.getElementById("add-session-btn"),
+            clearHistory: document.getElementById("clear-history"),
+            sound: document.getElementById("sound-btn"),
+            notify: document.getElementById("notify-btn"),
+            fullscreen: document.getElementById("fullscreen-btn"),
+            topStatus: document.getElementById("top-status"),
+            todayTime: document.getElementById("today-time"),
+            todayCount: document.getElementById("today-count"),
+            streakCount: document.getElementById("streak-count"),
+            allTime: document.getElementById("all-time"),
+            targetCopy: document.getElementById("target-copy"),
+            dayMeter: document.getElementById("day-meter"),
+            history: document.getElementById("history-list"),
+            historyCount: document.getElementById("history-count"),
+            nextTitle: document.getElementById("next-title"),
+            nextCopy: document.getElementById("next-copy")
+        };
 
         let state = {
-            mode: 'timer',
-            timeLeft: 1500,
-            initialTime: 1500,
-            breakTime: 300,
-            totalSeconds: parseFloat(localStorage.getItem('flux_total_sec')) || 0,
-            isActive: false,
-            isBreak: false,
-            label: 'Ready',
-            endTime: null 
+            mode: "sprint",
+            label: "Sprint",
+            phase: "focus",
+            duration: 25 * 60,
+            focusDuration: 25 * 60,
+            breakDuration: 5 * 60,
+            remaining: 25 * 60,
+            elapsed: 0,
+            running: false,
+            startedAt: null,
+            endsAt: null,
+            stopwatchBase: 0,
+            intention: "",
+            sound: true,
+            notify: false,
+            theme: "void"
         };
 
-        let timerRef = null;
+        let rafId = null;
+        let audioContext = null;
+        let lastPersistAt = 0;
 
-        window.onload = () => {
-            const saved = localStorage.getItem('flux_active_state');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                state = { ...state, ...parsed, isActive: false };
+        function now() {
+            return Date.now();
+        }
+
+        function clampNumber(value, min, max, fallback) {
+            const number = Number.parseInt(value, 10);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.min(max, Math.max(min, number));
+        }
+
+        function load() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(storeKey) || "null");
+                if (saved) state = { ...state, ...saved };
+            } catch {
+                localStorage.removeItem(storeKey);
             }
-            updateUI();
+
+            setTheme(state.theme || "void");
+            el.goalInput.value = state.intention || "";
+            el.sound.setAttribute("aria-pressed", String(Boolean(state.sound)));
+            el.notify.setAttribute("aria-pressed", String(Boolean(state.notify)));
+            syncDurationInputs();
+
+            if (state.running) reconcileRunningState();
+            updateActiveMode();
+            tick();
             renderHistory();
-            if ("Notification" in window) Notification.requestPermission();
-        };
-
-        function playSfx(id) {
-            const sound = document.getElementById(id);
-            sound.currentTime = 0;
-            sound.play().catch(() => {});
         }
 
-        function setMode(type, f, b, label) {
-            if (state.isActive) togglePlay();
-            state.mode = type;
-            state.timeLeft = f * 60;
-            state.initialTime = f * 60;
-            state.breakTime = b * 60;
-            state.isBreak = false;
-            state.label = label;
-            updateUI();
-            playSfx('stop-audio');
-            saveState();
+        function save() {
+            lastPersistAt = now();
+            localStorage.setItem(storeKey, JSON.stringify(state));
         }
 
-        function applyCustom() {
-            const f = parseInt(document.getElementById('custom-f').value) || 25;
-            const b = parseInt(document.getElementById('custom-b').value) || 5;
-            setMode('timer', f, b, 'Custom');
+        function saveOccasionally() {
+            if (now() - lastPersistAt > 5000) save();
         }
 
-        function togglePlay() {
-            const btn = document.getElementById('play-btn');
-            if (state.isActive) {
-                clearInterval(timerRef);
-                btn.textContent = "Start Flow";
-                btn.classList.add('start-btn');
-                document.getElementById('main-body').classList.remove('is-focusing');
-                playSfx('stop-audio');
-            } else {
-                state.endTime = Date.now() + (state.timeLeft * 1000);
-                timerRef = setInterval(tick, 200); 
-                btn.textContent = "Pause Flow";
-                btn.classList.remove('start-btn');
-                document.getElementById('main-body').classList.add('is-focusing');
-                playSfx('start-audio');
+        function history() {
+            try {
+                return JSON.parse(localStorage.getItem(historyKey) || "[]");
+            } catch {
+                localStorage.removeItem(historyKey);
+                return [];
             }
-            state.isActive = !state.isActive;
-            saveState();
+        }
+
+        function saveHistory(items) {
+            localStorage.setItem(historyKey, JSON.stringify(items.slice(0, 120)));
+        }
+
+        function setTheme(theme) {
+            state.theme = theme;
+            document.documentElement.dataset.theme = theme === "void" ? "" : theme;
+            document.querySelectorAll(".theme-btn").forEach((button) => {
+                button.classList.toggle("active", button.dataset.theme === theme);
+            });
+            save();
+        }
+
+        function setMode(modeName, custom) {
+            const mode = custom || modes[modeName];
+            const wasRunning = state.running;
+            stopLoop();
+            state = {
+                ...state,
+                mode: modeName,
+                label: mode.label,
+                phase: "focus",
+                duration: mode.stopwatch ? 0 : mode.focus * 60,
+                focusDuration: mode.stopwatch ? 0 : mode.focus * 60,
+                breakDuration: mode.stopwatch ? 0 : mode.break * 60,
+                remaining: mode.stopwatch ? 0 : mode.focus * 60,
+                elapsed: 0,
+                running: false,
+                startedAt: null,
+                endsAt: null,
+                stopwatchBase: 0
+            };
+            updateActiveMode();
+            syncDurationInputs();
+            updateUI();
+            save();
+            if (wasRunning) playTone("soft");
+        }
+
+        function updateActiveMode() {
+            document.querySelectorAll(".mode-btn").forEach((button) => {
+                button.classList.toggle("active", button.dataset.mode === state.mode);
+            });
+        }
+
+        function syncDurationInputs() {
+            if (state.mode === "stopwatch") return;
+            el.focusInput.value = Math.max(1, Math.round((state.focusDuration || state.duration || 1500) / 60));
+            el.breakInput.value = Math.max(1, Math.round((state.breakDuration || 300) / 60));
+        }
+
+        function start() {
+            state.intention = el.goalInput.value.trim();
+            if (state.mode === "stopwatch") {
+                state.startedAt = now();
+            } else {
+                state.endsAt = now() + state.remaining * 1000;
+            }
+            state.running = true;
+            save();
+            playTone("start");
+            loop();
+        }
+
+        function pause() {
+            reconcileRunningState();
+            state.running = false;
+            state.startedAt = null;
+            state.endsAt = null;
+            state.stopwatchBase = state.elapsed;
+            save();
+            playTone("soft");
+            stopLoop();
+            updateUI();
+        }
+
+        function reset() {
+            const mode = state.mode === "custom"
+                ? { label: "Custom", focus: Math.max(1, Math.round((state.focusDuration || state.duration) / 60)), break: clampNumber(el.breakInput.value, 1, 60, 10) }
+                : modes[state.mode];
+
+            stopLoop();
+            state.running = false;
+            state.phase = "focus";
+            state.duration = mode.stopwatch ? 0 : mode.focus * 60;
+            state.focusDuration = mode.stopwatch ? 0 : mode.focus * 60;
+            state.breakDuration = mode.stopwatch ? 0 : mode.break * 60;
+            state.remaining = mode.stopwatch ? 0 : mode.focus * 60;
+            state.elapsed = 0;
+            state.startedAt = null;
+            state.endsAt = null;
+            state.stopwatchBase = 0;
+            save();
+            playTone("soft");
+            updateUI();
+        }
+
+        function skip() {
+            if (state.mode === "stopwatch") {
+                logSession("Count Up", Math.max(60, state.elapsed), state.intention);
+                reset();
+                return;
+            }
+            completePhase(true);
+        }
+
+        function reconcileRunningState() {
+            const current = now();
+            if (state.mode === "stopwatch") {
+                const base = state.stopwatchBase || 0;
+                const started = state.startedAt || current;
+                state.elapsed = base + Math.max(0, Math.floor((current - started) / 1000));
+                state.remaining = state.elapsed;
+                return;
+            }
+
+            if (!state.endsAt) return;
+            while (state.running && state.endsAt && state.endsAt <= current && state.mode !== "stopwatch") {
+                completePhase(false, true, state.endsAt);
+            }
+            if (!state.running || !state.endsAt) return;
+            state.remaining = Math.max(0, Math.ceil((state.endsAt - current) / 1000));
+            state.elapsed = Math.max(0, state.duration - state.remaining);
+        }
+
+        function completePhase(skipped, fromLoop = false, transitionAt = now()) {
+            stopLoop();
+            const completedDuration = Math.max(0, state.duration);
+            const wasFocus = state.phase === "focus";
+            const activeLabel = state.label;
+            const activeGoal = state.intention;
+
+            if (wasFocus && completedDuration > 0) {
+                logSession(activeLabel, completedDuration, activeGoal, skipped);
+            }
+
+            playTone(wasFocus ? "done" : "soft");
+            notify(wasFocus ? "Focus session complete" : "Break complete");
+
+            if (state.mode === "custom") {
+                state.focusDuration = clampNumber(el.focusInput.value, 1, 240, 50) * 60;
+                state.breakDuration = clampNumber(el.breakInput.value, 1, 60, 10) * 60;
+                state.duration = wasFocus ? state.breakDuration : state.focusDuration;
+            } else {
+                const mode = modes[state.mode];
+                state.focusDuration = mode.focus * 60;
+                state.breakDuration = mode.break * 60;
+                state.duration = wasFocus ? state.breakDuration : state.focusDuration;
+            }
+
+            state.phase = wasFocus ? "break" : "focus";
+            state.remaining = state.duration;
+            state.elapsed = 0;
+            state.running = wasFocus && state.duration > 0;
+            state.startedAt = null;
+            state.endsAt = state.running ? transitionAt + state.remaining * 1000 : null;
+            state.stopwatchBase = 0;
+
+            if (state.running && !fromLoop) loop();
+            save();
+            renderHistory();
+            updateUI();
+        }
+
+        function logSession(type, seconds, intention, skipped = false) {
+            const items = history();
+            items.unshift({
+                id: window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()),
+                type,
+                seconds,
+                intention: intention || "",
+                skipped,
+                at: new Date().toISOString()
+            });
+            saveHistory(items);
+            renderHistory();
+        }
+
+        function loop() {
+            stopLoop();
+            const frame = () => {
+                reconcileRunningState();
+                updateUI();
+                if (state.running) {
+                    rafId = requestAnimationFrame(frame);
+                }
+            };
+            rafId = requestAnimationFrame(frame);
+        }
+
+        function stopLoop() {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = null;
         }
 
         function tick() {
-            const now = Date.now();
-            
-            if (state.mode === 'timer') {
-                const diff = Math.max(0, Math.ceil((state.endTime - now) / 1000));
-                
-                if (!state.isBreak && diff < state.timeLeft) {
-                    state.totalSeconds += (state.timeLeft - diff);
-                }
-                
-                state.timeLeft = diff;
-                if (state.timeLeft <= 0) handleTransition();
-            } else {
-                // Stopwatch uses actual time delta to prevent drift
-                state.timeLeft++;
-                state.totalSeconds++;
-            }
-            
+            reconcileRunningState();
             updateUI();
-            if (state.timeLeft % 10 === 0) saveState();
-        }
-
-        function handleTransition() {
-            playSfx('bell-audio');
-            clearInterval(timerRef);
-            state.isActive = false;
-
-            if (Notification.permission === "granted") {
-                new Notification(state.isBreak ? "Break Over!" : "Session Complete");
-            }
-
-            if (!state.isBreak) {
-                logSession(state.label, state.initialTime);
-                state.isBreak = true;
-                state.timeLeft = state.breakTime;
-                state.initialTime = state.breakTime;
-                state.label = "Rest";
-                togglePlay(); // Auto-start break
-            } else {
-                state.isBreak = false;
-                state.timeLeft = 1500;
-                state.initialTime = 1500;
-                state.label = "Ready";
-                const btn = document.getElementById('play-btn');
-                btn.textContent = "Start Flow";
-                btn.classList.add('start-btn');
-                document.getElementById('main-body').classList.remove('is-focusing');
-            }
-            updateUI();
-            saveState();
+            if (state.running) loop();
         }
 
         function updateUI() {
-            const m = Math.floor(Math.abs(state.timeLeft) / 60);
-            const s = Math.abs(state.timeLeft) % 60;
-            document.getElementById('time-display').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            
-            let progress;
-            if (state.mode === 'timer') {
-                progress = state.timeLeft / state.initialTime;
-            } else {
-                progress = 1 - ((state.timeLeft % 60) / 60);
+            const displaySeconds = state.mode === "stopwatch" ? state.elapsed : state.remaining;
+            el.time.textContent = formatClock(displaySeconds);
+
+            const phaseName = state.mode === "stopwatch" ? "Count Up" : state.phase === "break" ? "Break" : "Focus";
+            el.phase.textContent = `${state.label} ${phaseName}`;
+            el.goal.textContent = state.intention || (state.phase === "break" ? "Step away, breathe, reset." : "Choose one task and start.");
+            el.start.textContent = state.running ? "Pause" : "Start";
+            el.topStatus.textContent = state.running ? `${phaseName} in progress` : `${phaseName} ready`;
+            const logMinutes = state.mode === "stopwatch" ? 25 : Math.max(1, Math.round((state.focusDuration || state.duration || 1500) / 60));
+            el.addSession.textContent = `Log ${logMinutes}m`;
+
+            const progress = state.mode === "stopwatch"
+                ? (state.elapsed % 3600) / 3600
+                : state.duration ? 1 - (state.remaining / state.duration) : 0;
+            el.progress.style.setProperty("--progress", String(Math.max(0, Math.min(1, progress))));
+            el.nextTitle.textContent = state.phase === "focus" ? "Next break" : "Next focus";
+            el.nextCopy.textContent = state.phase === "focus"
+                ? "Breaks auto-start when focus completes."
+                : "A clean focus round is queued after this break.";
+            if (state.running) saveOccasionally();
+        }
+
+        function formatClock(totalSeconds) {
+            const seconds = Math.max(0, Math.floor(totalSeconds));
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const rest = seconds % 60;
+            if (hours > 0) {
+                return `${hours}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
             }
-            
-            ring.style.strokeDashoffset = circumference * (1 - progress);
-            document.querySelector('.hours-pill span').textContent = (state.totalSeconds / 3600).toFixed(2);
-            document.getElementById('status-text').textContent = state.label;
+            return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
         }
 
-        function saveState() {
-            localStorage.setItem('flux_active_state', JSON.stringify(state));
-            localStorage.setItem('flux_total_sec', state.totalSeconds);
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            if (hours <= 0) return `${minutes}m`;
+            return `${hours}h ${String(minutes).padStart(2, "0")}m`;
         }
 
-        function logSession(type, duration) {
-            const history = JSON.parse(localStorage.getItem('flux_history') || '[]');
-            history.unshift({
-                date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                type: type,
-                mins: Math.floor(duration / 60)
-            });
-            localStorage.setItem('flux_history', JSON.stringify(history.slice(0, 20)));
-            renderHistory();
+        function dateKey(date) {
+            return new Date(date).toLocaleDateString("en-CA");
         }
 
         function renderHistory() {
-            const history = JSON.parse(localStorage.getItem('flux_history') || '[]');
-            document.getElementById('history-list').innerHTML = history.map(item => `
-                <div class="history-item">
-                    <strong style="color:#fff">${item.type}</strong> — ${item.mins}m<br>
-                    <span style="color:#555">${item.date}</span>
-                </div>
-            `).join('');
+            const items = history();
+            const today = dateKey(new Date());
+            const todayItems = items.filter((item) => dateKey(item.at) === today && !item.skipped);
+            const todaySeconds = todayItems.reduce((sum, item) => sum + item.seconds, 0);
+            const allSeconds = items.filter((item) => !item.skipped).reduce((sum, item) => sum + item.seconds, 0);
+            const uniqueDays = Array.from(new Set(items.filter((item) => !item.skipped).map((item) => dateKey(item.at)))).sort().reverse();
+            const streak = calculateStreak(uniqueDays);
+            const progress = Math.min(100, Math.round((todayItems.length / dayTarget) * 100));
+
+            el.todayTime.textContent = formatDuration(todaySeconds);
+            el.todayCount.textContent = String(todayItems.length);
+            el.streakCount.textContent = String(streak);
+            el.allTime.textContent = formatDuration(allSeconds);
+            el.targetCopy.textContent = `${todayItems.length} of ${dayTarget} focus sessions complete.`;
+            el.dayMeter.parentElement.style.setProperty("--day-progress", `${progress}%`);
+            el.historyCount.textContent = `${items.length} saved`;
+
+            if (!items.length) {
+                el.history.innerHTML = `<div class="empty">Completed sessions will appear here.</div>`;
+                return;
+            }
+
+            el.history.innerHTML = items.slice(0, 30).map((item) => {
+                const time = new Date(item.at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+                const goal = item.intention ? `<span>${escapeHtml(item.intention)}</span>` : `<span>${item.skipped ? "Skipped" : "Completed"}</span>`;
+                return `
+                    <div class="history-item">
+                        <div>
+                            <strong>${escapeHtml(item.type)}</strong>
+                            ${goal}
+                        </div>
+                        <span>${formatDuration(item.seconds)}<br>${time}</span>
+                    </div>
+                `;
+            }).join("");
         }
 
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
+        function calculateStreak(days) {
+            if (!days.length) return 0;
+            let streak = 0;
+            const cursor = new Date();
+            for (;;) {
+                const key = dateKey(cursor);
+                if (!days.includes(key)) break;
+                streak += 1;
+                cursor.setDate(cursor.getDate() - 1);
+            }
+            return streak;
         }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, (char) => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "\"": "&quot;",
+                "'": "&#039;"
+            }[char]));
+        }
+
+        function playTone(kind) {
+            if (!state.sound) return;
+            const AudioEngine = window.AudioContext || window.webkitAudioContext;
+            if (!AudioEngine) return;
+            audioContext = audioContext || new AudioEngine();
+            if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+            const notes = kind === "done" ? [523.25, 659.25, 783.99] : kind === "start" ? [392, 523.25] : [329.63];
+            notes.forEach((frequency, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                oscillator.frequency.value = frequency;
+                oscillator.type = "sine";
+                gain.gain.setValueAtTime(0.0001, audioContext.currentTime + index * 0.09);
+                gain.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + index * 0.09 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + index * 0.09 + 0.16);
+                oscillator.connect(gain).connect(audioContext.destination);
+                oscillator.start(audioContext.currentTime + index * 0.09);
+                oscillator.stop(audioContext.currentTime + index * 0.09 + 0.18);
+            });
+        }
+
+        function notify(message) {
+            if (!state.notify || !("Notification" in window) || Notification.permission !== "granted") return;
+            new Notification("FluX", { body: message });
+        }
+
+        document.querySelectorAll(".mode-btn").forEach((button) => {
+            button.addEventListener("click", () => setMode(button.dataset.mode));
+        });
+
+        document.querySelectorAll(".theme-btn").forEach((button) => {
+            button.addEventListener("click", () => setTheme(button.dataset.theme));
+        });
+
+        el.start.addEventListener("click", () => state.running ? pause() : start());
+        el.reset.addEventListener("click", reset);
+        el.skip.addEventListener("click", skip);
+
+        el.custom.addEventListener("click", () => {
+            const focus = clampNumber(el.focusInput.value, 1, 240, 50);
+            const rest = clampNumber(el.breakInput.value, 1, 60, 10);
+            el.focusInput.value = focus;
+            el.breakInput.value = rest;
+            setMode("custom", { label: "Custom", focus, break: rest });
+        });
+
+        el.addSession.addEventListener("click", () => {
+            const intention = el.goalInput.value.trim();
+            const manualSeconds = state.mode === "stopwatch" ? 25 * 60 : Math.max(60, state.focusDuration || state.duration || 25 * 60);
+            logSession("Manual", manualSeconds, intention);
+            playTone("done");
+        });
+
+        el.goalInput.addEventListener("input", () => {
+            state.intention = el.goalInput.value.trim();
+            updateUI();
+        });
+
+        el.sound.addEventListener("click", () => {
+            state.sound = !state.sound;
+            el.sound.setAttribute("aria-pressed", String(state.sound));
+            save();
+            playTone("soft");
+        });
+
+        el.notify.addEventListener("click", async () => {
+            if (!("Notification" in window)) return;
+            if (Notification.permission === "default") {
+                await Notification.requestPermission();
+            }
+            state.notify = Notification.permission === "granted" ? !state.notify : false;
+            el.notify.setAttribute("aria-pressed", String(state.notify));
+            save();
+        });
+
+        el.fullscreen.addEventListener("click", () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.();
+            } else {
+                document.exitFullscreen?.();
+            }
+        });
+
+        el.clearHistory.addEventListener("click", () => {
+            if (!history().length) return;
+            const confirmed = window.confirm("Clear all saved FluX sessions?");
+            if (!confirmed) return;
+            saveHistory([]);
+            renderHistory();
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.target instanceof HTMLInputElement) return;
+            if (event.code === "Space") {
+                event.preventDefault();
+                state.running ? pause() : start();
+            }
+            if (event.key.toLowerCase() === "r") reset();
+            if (event.key.toLowerCase() === "s") skip();
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) tick();
+        });
+
+        window.addEventListener("beforeunload", save);
+        load();
     </script>
 </body>
 </html>

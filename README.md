@@ -1,32 +1,25 @@
-# ⚡ FluX | Minimalist Focus Engine
+# FluX | Precision Focus Engine
 
-[**Live Demo »**](https://fluxxweb.netlify.app)
-
-FluX is a high-precision, aesthetic productivity timer built for deep work. Unlike standard browser timers that drift when tabs are backgrounded, FluX utilizes timestamp-based logic to ensure millisecond accuracy during intense focus sessions.
+FluX is a static, high-precision focus timer for deep work. It runs as a single HTML file with no build step, while still supporting accurate sessions, breaks, stopwatch mode, local history, daily stats, themes, sound, fullscreen, notifications, and refresh-safe running timers.
 
 ![FluX Preview](preview.png)
 
----
+## Features
 
-## 🚀 Key Features
+- Timestamp-based focus and break timers that stay accurate when the tab is backgrounded.
+- Sprint, Flow, Deep Work, custom, and count-up stopwatch modes.
+- Running sessions restore after refresh using saved timestamps.
+- Session intention, manual logging, daily target progress, streaks, and all-time totals.
+- Local-only data storage through `localStorage`.
+- Sound, notification, fullscreen, and theme controls.
+- Responsive static UI for desktop and mobile.
 
-*   **Drift-Free Precision:** Uses `Date.now()` delta calculations to bypass browser background throttling.
-*   **Three Deep Work Tiers:** 
-    *   **Pomodoro:** 25m Focus / 5m Break.
-    *   **Deep Work:** 90m Focus / 15m Break.
-    *   **Monk Mode:** 180m Focus / 30m Break.
-*   **Persistent Sessions:** Flow logs and timer states are saved to `localStorage`, so a page refresh never kills your progress.
-*   **Glassmorphism UI:** A sleek, distraction-free interface designed for zero-clutter environments.
-*   **Dynamic Progress Ring:** Real-time SVG visualization of your focus session.
+## Local Setup
 
-## 🛠️ Tech Stack
+Open `index.html` directly in a browser, or serve the folder with any static server:
 
-*   **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3.
-*   **Storage:** Browser LocalStorage API.
-*   **Audio:** High-fidelity notification pings for session transitions.
+```bash
+python -m http.server 8000
+```
 
-## 📦 Local Setup
-
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/rudra-th/fluxxweb.git](https://github.com/rudra-th/fluxxweb.git)
+Then visit `http://localhost:8000`.
