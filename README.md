@@ -1,8 +1,12 @@
-# FluX | Precision Focus Engine
+# FLUXX WEB | Precision Focus Engine
 
-FluX is a static, high-precision focus timer for deep work. It runs as a single HTML file with no build step, while still supporting accurate sessions, breaks, stopwatch mode, local history, daily stats, themes, sound, fullscreen, notifications, and refresh-safe running timers.
+**Minimal focus timer. Flow tracking.**
 
-![FluX Preview](preview.png)
+FLUXX WEB is a static, high-precision focus timer for deep work. It runs as a single HTML file with no build step, while still supporting accurate sessions, breaks, stopwatch mode, local history, daily stats, themes, sound, fullscreen, notifications, and refresh-safe running timers.
+
+🔗 **Live:** [fluxxweb.netlify.app](https://fluxxweb.netlify.app/)
+
+![FLUXX WEB Preview](preview.png)
 
 ## Features
 
